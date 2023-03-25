@@ -109,14 +109,14 @@ extern "C" {
 #define AUDIO_IN_TC                                   0x02U
 
 
-#define AUDIO_OUT_PACKET                              (uint16_t)(((USBD_AUDIO_FREQ * 2U * 2U) / 1000U))
+#define AUDIO_IN_PACKET                              (uint16_t)(USBD_AUDIO_FREQ / 1000U * 2U)
 #define AUDIO_DEFAULT_VOLUME                          70U
 
 /* Number of sub-packets in the audio transfer buffer. You can modify this value but always make sure
   that it is an even number and higher than 3 */
-#define AUDIO_OUT_PACKET_NUM                          80U
+#define AUDIO_OUT_PACKET_NUM                          6U
 /* Total size of the audio transfer buffer */
-#define AUDIO_TOTAL_BUF_SIZE                          ((uint16_t)(AUDIO_OUT_PACKET * AUDIO_OUT_PACKET_NUM))
+#define AUDIO_TOTAL_BUF_SIZE                          ((uint16_t)(AUDIO_IN_PACKET * AUDIO_OUT_PACKET_NUM))
 
 /* Audio Commands enumeration */
 typedef enum
