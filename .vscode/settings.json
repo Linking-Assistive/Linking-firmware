@@ -4,5 +4,13 @@
     "usbd_core.h": "c",
     "usbd_conf.h": "c",
     "usbd_def.h": "c"
-  }
+  },
+  "makefile.launchConfigurations": [
+    {
+      "cwd": "/home/boom/fyp/audio_firmware/Audio_recorder/build",
+      "binaryPath": "/home/boom/fyp/audio_firmware/Audio_recorder/build/Audio_recorder.elf",
+      "binaryArgs": []
+    }
+  ],
+  "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools"
 }
