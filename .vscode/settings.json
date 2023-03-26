@@ -9,7 +9,8 @@
     "math.h": "c",
     "main.h": "c",
     "cstdio": "c",
-    "usart.h": "c"
+    "usart.h": "c",
+    "stm32f4xx_ll_usb.h": "c"
   },
   "makefile.launchConfigurations": [
     {

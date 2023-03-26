@@ -74,19 +74,12 @@ EndBSPDependencies */
 #define MIC_PACKET_SZE(frq) \
   (uint8_t)(((frq * 1U * 2U) / 1000U) & 0xFFU), (uint8_t)((((frq * 1U * 2U) / 1000U) >> 8) & 0xFFU)
 
-static uint8_t IsocInBuffDummy[AUDIO_IN_PACKET];
-static uint8_t fakeSinData[AUDIO_IN_PACKET];
-
 
 static uint8_t USBD_AUDIO_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx);
 static uint8_t USBD_AUDIO_DeInit(USBD_HandleTypeDef *pdev, uint8_t cfgidx);
-
-static uint8_t USBD_AUDIO_Setup(USBD_HandleTypeDef *pdev,
-                                USBD_SetupReqTypedef *req);
-#ifndef USE_USBD_COMPOSITE
+static uint8_t USBD_AUDIO_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req);
 static uint8_t *USBD_AUDIO_GetCfgDesc(uint16_t *length);
 static uint8_t *USBD_AUDIO_GetDeviceQualifierDesc(uint16_t *length);
-#endif /* USE_USBD_COMPOSITE  */
 static uint8_t USBD_AUDIO_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum);
 static uint8_t USBD_AUDIO_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum);
 static uint8_t USBD_AUDIO_EP0_RxReady(USBD_HandleTypeDef *pdev);
@@ -99,13 +92,8 @@ static void AUDIO_REQ_GetCurrent(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef 
 static void AUDIO_REQ_SetCurrent(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req);
 static void *USBD_AUDIO_GetAudioHeaderDesc(uint8_t *pConfDesc);
 
-/**
-  * @}
-  */
-
-/** @defgroup USBD_AUDIO_Private_Variables
-  * @{
-  */
+static uint8_t IsocInBuffDummy[48 * 4 * 2];
+static uint8_t fakeSinData[48 * 4 * 2];
 
 USBD_ClassTypeDef USBD_AUDIO =
 {
@@ -119,20 +107,12 @@ USBD_ClassTypeDef USBD_AUDIO =
   USBD_AUDIO_SOF,
   USBD_AUDIO_IsoINIncomplete,
   USBD_AUDIO_IsoOutIncomplete,
-#ifdef USE_USBD_COMPOSITE
-  NULL,
-  NULL,
-  NULL,
-  NULL,
-#else
   USBD_AUDIO_GetCfgDesc,
   USBD_AUDIO_GetCfgDesc,
   USBD_AUDIO_GetCfgDesc,
-  USBD_AUDIO_GetDeviceQualifierDesc,
-#endif /* USE_USBD_COMPOSITE  */
+  USBD_AUDIO_GetDeviceQualifierDesc
 };
 
-#ifndef USE_USBD_COMPOSITE
 /* USB AUDIO device Configuration Descriptor */
 __ALIGN_BEGIN static uint8_t USBD_AUDIO_CfgDesc[USB_AUDIO_CONFIG_DESC_SIZ] __ALIGN_END =
 {
@@ -144,11 +124,7 @@ __ALIGN_BEGIN static uint8_t USBD_AUDIO_CfgDesc[USB_AUDIO_CONFIG_DESC_SIZ] __ALI
   0x02,                                 /* bNumInterfaces */
   0x01,                                 /* bConfigurationValue */
   0x00,                                 /* iConfiguration */
-#if (USBD_SELF_POWERED == 1U)
-  0xC0,                                 /* bmAttributes: Bus Powered according to user configuration */
-#else
   0x80,                                 /* bmAttributes: Bus Powered according to user configuration */
-#endif /* USBD_SELF_POWERED */
   USBD_MAX_POWER,                       /* MaxPower (mA) */
   /* 09 byte*/
 
@@ -299,7 +275,6 @@ __ALIGN_BEGIN static uint8_t USBD_AUDIO_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIE
   0x01,
   0x00,
 };
-#endif /* USE_USBD_COMPOSITE  */
 
 // static uint8_t AUDIOOutEpAdd = AUDIO_IN_EP;
 /**
@@ -333,18 +308,16 @@ static uint8_t USBD_AUDIO_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
                                                                   0U);
 
   /* Open EP IN */
-  (void)USBD_LL_OpenEP(pdev, AUDIO_IN_EP, USBD_EP_TYPE_ISOC, AUDIO_IN_PACKET);
+  if(USBD_LL_OpenEP(pdev, AUDIO_IN_EP, USBD_EP_TYPE_ISOC, AUDIO_IN_PACKET) != USBD_OK)
+  {
+    USBD_ErrLog("USBD_LL_OpenEP AUDIO_IN_EP Failed");
+  }
 
   haudio->alt_setting = 0U;
   haudio->offset = AUDIO_OFFSET_UNKNOWN;
   haudio->wr_ptr = 0U;
   haudio->rd_ptr = 0U;
   haudio->rd_enable = 0U;
-
-  USBD_LL_OpenEP(pdev,
-  AUDIO_IN_EP,
-  USBD_EP_TYPE_ISOC,
-  AUDIO_IN_PACKET);
 
   USBD_LL_FlushEP(pdev, AUDIO_IN_EP);
   USBD_LL_Transmit(pdev, AUDIO_IN_EP, IsocInBuffDummy, AUDIO_IN_PACKET);
