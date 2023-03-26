@@ -70,23 +70,28 @@ void MX_USB_DEVICE_Init(void)
   /* Init Device Library, add supported class and start the library. */
   if (USBD_Init(&hUsbDeviceFS, &FS_Desc, DEVICE_FS) != USBD_OK)
   {
+    USBD_ErrLog("USBD_Init Failed");
     Error_Handler();
   }
   if (USBD_RegisterClass(&hUsbDeviceFS, &USBD_AUDIO) != USBD_OK)
   {
+    USBD_ErrLog("USBD_RegisterClass Failed");
     Error_Handler();
   }
   if (USBD_AUDIO_RegisterInterface(&hUsbDeviceFS, &USBD_AUDIO_fops_FS) != USBD_OK)
   {
+    USBD_ErrLog("USBD_AUDIO_RegisterInterface Failed");
     Error_Handler();
   }
   if (USBD_Start(&hUsbDeviceFS) != USBD_OK)
   {
-    Error_Handler();
+    USBD_ErrLog("USBD_Start Failed");
+    Error_Handler(); 
   }
 
-  /* USER CODE BEGIN USB_DEVICE_Init_PostTreatment */
 
+  /* USER CODE BEGIN USB_DEVICE_Init_PostTreatment */
+  USBD_DbgLog("USB Device Initialized");
   /* USER CODE END USB_DEVICE_Init_PostTreatment */
 }
 
