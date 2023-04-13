@@ -92,7 +92,7 @@ static void AUDIO_REQ_GetCurrent(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef 
 static void AUDIO_REQ_SetCurrent(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req);
 static void *USBD_AUDIO_GetAudioHeaderDesc(uint8_t *pConfDesc);
 
-static uint8_t IsocInBuffDummy[48 * 4 * 2];
+// static uint8_t IsocInBuffDummy[48 * 4 * 2];
 static uint8_t fakeSinData[48 * 4 * 2];
 
 USBD_ClassTypeDef USBD_AUDIO =
@@ -308,10 +308,14 @@ static uint8_t USBD_AUDIO_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
                                                                   0U);
 
   /* Open EP IN */
-  if(USBD_LL_OpenEP(pdev, AUDIO_IN_EP, USBD_EP_TYPE_ISOC, AUDIO_IN_PACKET) != USBD_OK)
+  if(USBD_LL_OpenEP(pdev, AUDIO_IN_EP, USBD_EP_TYPE_ISOC, AUDIO_IN_EP_MAX_PACKET_SIZE) != USBD_OK)
   {
     USBD_ErrLog("USBD_LL_OpenEP AUDIO_IN_EP Failed");
   }
+  pdev->ep_in[1].is_used = 1U;
+  pdev->ep_in[1].bInterval = 1U;
+  pdev->ep_in[1].maxpacket = AUDIO_IN_EP_MAX_PACKET_SIZE;
+
 
   haudio->alt_setting = 0U;
   haudio->offset = AUDIO_OFFSET_UNKNOWN;
@@ -320,7 +324,7 @@ static uint8_t USBD_AUDIO_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
   haudio->rd_enable = 0U;
 
   USBD_LL_FlushEP(pdev, AUDIO_IN_EP);
-  USBD_LL_Transmit(pdev, AUDIO_IN_EP, IsocInBuffDummy, AUDIO_IN_PACKET);
+  // USBD_LL_Transmit(pdev, AUDIO_IN_EP, IsocInBuffDummy, AUDIO_IN_PACKET);
 
   int16_t* p = (int16_t*)fakeSinData;
   for (uint32_t i = 0U; i < 48; i++)
@@ -342,7 +346,7 @@ static uint8_t USBD_AUDIO_DeInit(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 {
   UNUSED(cfgidx);
 
-  /* Open EP OUT */
+  /* Close EP IN */
   (void)USBD_LL_CloseEP(pdev, AUDIO_IN_EP);
 
   /* DeInit  physical Interface components */
@@ -450,6 +454,7 @@ static uint8_t USBD_AUDIO_Setup(USBD_HandleTypeDef *pdev,
             if ((uint8_t)(req->wValue) <= USBD_MAX_NUM_INTERFACES)
             {
               haudio->alt_setting = (uint8_t)(req->wValue);
+              USBD_DbgLog("USBD_AUDIO_Setup: alt_setting = %ld", haudio->alt_setting);
             }
             else
             {

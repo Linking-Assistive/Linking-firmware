@@ -62,10 +62,10 @@
   * @{
   */
 
-#define USBD_VID     1155
+#define USBD_VID     0x483
 #define USBD_LANGID_STRING     1033
 #define USBD_MANUFACTURER_STRING     "ISDN4002"
-#define USBD_PID_FS     22336
+#define USBD_PID_FS     0x5731
 #define USBD_PRODUCT_STRING_FS     "ISDN4002 Audio Class"
 #define USBD_CONFIGURATION_STRING_FS     "AUDIO Config"
 #define USBD_INTERFACE_STRING_FS     "AUDIO Interface"

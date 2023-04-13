@@ -975,6 +975,8 @@ void USBD_CtlError(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 
   (void)USBD_LL_StallEP(pdev, 0x80U);
   (void)USBD_LL_StallEP(pdev, 0U);
+
+  USBD_ErrLog("Control Error");
 }
 
 
