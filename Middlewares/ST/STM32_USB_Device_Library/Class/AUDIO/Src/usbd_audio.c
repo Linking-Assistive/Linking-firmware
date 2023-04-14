@@ -94,6 +94,7 @@ static void *USBD_AUDIO_GetAudioHeaderDesc(uint8_t *pConfDesc);
 
 // static uint8_t IsocInBuffDummy[48 * 4 * 2];
 static uint8_t fakeSinData[48 * 4 * 2];
+static uint8_t playFlag = 0;
 
 USBD_ClassTypeDef USBD_AUDIO =
 {
@@ -308,13 +309,13 @@ static uint8_t USBD_AUDIO_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
                                                                   0U);
 
   /* Open EP IN */
-  if(USBD_LL_OpenEP(pdev, AUDIO_IN_EP, USBD_EP_TYPE_ISOC, AUDIO_IN_EP_MAX_PACKET_SIZE) != USBD_OK)
+  if(USBD_LL_OpenEP(pdev, AUDIO_IN_EP, USBD_EP_TYPE_ISOC, AUDIO_IN_PACKET) != USBD_OK)
   {
     USBD_ErrLog("USBD_LL_OpenEP AUDIO_IN_EP Failed");
   }
   pdev->ep_in[1].is_used = 1U;
   pdev->ep_in[1].bInterval = 1U;
-  pdev->ep_in[1].maxpacket = AUDIO_IN_EP_MAX_PACKET_SIZE;
+  pdev->ep_in[1].maxpacket = AUDIO_IN_PACKET;
 
 
   haudio->alt_setting = 0U;
@@ -323,14 +324,15 @@ static uint8_t USBD_AUDIO_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
   haudio->rd_ptr = 0U;
   haudio->rd_enable = 0U;
 
-  USBD_LL_FlushEP(pdev, AUDIO_IN_EP);
-  // USBD_LL_Transmit(pdev, AUDIO_IN_EP, IsocInBuffDummy, AUDIO_IN_PACKET);
-
   int16_t* p = (int16_t*)fakeSinData;
   for (uint32_t i = 0U; i < 48; i++)
   {
     p[i] = (int16_t)(sin(2 * 3.14159265358979323846 * i / 48.0) * 32767);
   }
+
+  USBD_LL_FlushEP(pdev, AUDIO_IN_EP);
+  USBD_StatusTypeDef usb_status = USBD_LL_Transmit(pdev, AUDIO_IN_EP, fakeSinData, AUDIO_IN_PACKET);
+  USBD_DbgLog("Init Transmit returns %d", usb_status);
 
   return (uint8_t)USBD_OK;
 }
@@ -454,7 +456,16 @@ static uint8_t USBD_AUDIO_Setup(USBD_HandleTypeDef *pdev,
             if ((uint8_t)(req->wValue) <= USBD_MAX_NUM_INTERFACES)
             {
               haudio->alt_setting = (uint8_t)(req->wValue);
-              USBD_DbgLog("USBD_AUDIO_Setup: alt_setting = %ld", haudio->alt_setting);
+              USBD_DbgLog("alt_setting = %ld", haudio->alt_setting);
+              if (haudio->alt_setting == 1)
+              {
+                playFlag = 1U;
+              }
+              else
+              {
+                playFlag = 0U;
+                USBD_LL_FlushEP(pdev, AUDIO_IN_EP);
+              }
             }
             else
             {
@@ -511,14 +522,10 @@ static uint8_t *USBD_AUDIO_GetCfgDesc(uint16_t *length)
   */
 static uint8_t USBD_AUDIO_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum)
 {
-  UNUSED(pdev);
-  UNUSED(epnum);
+  USBD_DbgLog("DataIn: epnum=%d", epnum);
 
-  if (epnum == (AUDIO_IN_EP & 0x7F))
-  {
-    	USBD_LL_FlushEP  (pdev, AUDIO_IN_EP);
-      USBD_LL_Transmit(pdev, AUDIO_IN_EP, fakeSinData, AUDIO_IN_PACKET);
-  }
+  USBD_LL_FlushEP  (pdev, AUDIO_IN_EP);
+  USBD_LL_Transmit(pdev, AUDIO_IN_EP, fakeSinData, AUDIO_IN_PACKET);
 
   return (uint8_t)USBD_OK;
 }
@@ -574,7 +581,13 @@ static uint8_t USBD_AUDIO_EP0_TxReady(USBD_HandleTypeDef *pdev)
   */
 static uint8_t USBD_AUDIO_SOF(USBD_HandleTypeDef *pdev)
 {
-  UNUSED(pdev);
+  USBD_DbgLog("USBD_SOF");
+  
+  if (playFlag == 1)
+  {
+    USBD_LL_Transmit(pdev, AUDIO_IN_EP, fakeSinData, AUDIO_IN_PACKET);
+    playFlag = 2;
+  }
 
   return (uint8_t)USBD_OK;
 }

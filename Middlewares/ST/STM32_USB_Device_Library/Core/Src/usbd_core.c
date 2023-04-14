@@ -679,8 +679,6 @@ USBD_StatusTypeDef USBD_LL_DataOutStage(USBD_HandleTypeDef *pdev,
 USBD_StatusTypeDef USBD_LL_DataInStage(USBD_HandleTypeDef *pdev,
                                        uint8_t epnum, uint8_t *pdata)
 {
-  USBD_DbgLog("USBD_LL_DataInStage:           epnum=%d", epnum);
-  
   USBD_EndpointTypeDef *pep;
   USBD_StatusTypeDef ret;
   uint8_t idx;
