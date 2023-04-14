@@ -581,7 +581,7 @@ static uint8_t USBD_AUDIO_EP0_TxReady(USBD_HandleTypeDef *pdev)
   */
 static uint8_t USBD_AUDIO_SOF(USBD_HandleTypeDef *pdev)
 {
-  USBD_DbgLog("USBD_SOF");
+  // USBD_DbgLog("USBD_SOF");
   
   if (playFlag == 1)
   {
